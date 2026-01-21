@@ -129,7 +129,6 @@ Os eventos de autenticação são registrados automaticamente em um arquivo de l
 
 ## 🚀 Possíveis Próximas Evoluções
 
-* Bloqueio por endereço IP independente do usuário
 * Persistência de usuários em arquivo ou banco de dados
 * Análise por janela de tempo
 * Geração de relatórios de incidentes
