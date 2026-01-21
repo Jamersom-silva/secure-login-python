@@ -1,43 +1,103 @@
+import time
+from datetime import datetime
+
 # ============================
-# Secure Login Simulation
-# Uso educacional
+# CONFIGURAÇÕES
 # ============================
 
-# Credenciais corretas (simulação)
-USUARIO_CORRETO = "admin"
-SENHA_CORRETA = "admin123"
+MAX_TENTATIVAS = 3
+DELAY_TENTATIVAS = 2
+LOG_FILE = "security.log"
 
-# Número máximo de tentativas
-tentativas = 3
+# ============================
+# BASE DE USUÁRIOS (SIMULADA)
+# ============================
 
-def registrar_log(mensagem):
-    """
-    Simula o registro de eventos de segurança
-    """
-    print(f"[LOG] {mensagem}")
+usuarios = {
+    "admin": {
+        "senha": "admin123",
+        "tentativas": MAX_TENTATIVAS,
+        "bloqueado": False,
+        "ip": "10.0.0.1"
+    },
+    "joao": {
+        "senha": "joao123",
+        "tentativas": MAX_TENTATIVAS,
+        "bloqueado": False,
+        "ip": "192.168.1.10"
+    }
+}
 
-# Loop principal de login
-while tentativas > 0:
-    try:
-        # Simulando entrada do usuário
-        usuario = "admin"
-        senha = "1234"  # senha errada propositalmente
+# ============================
+# FUNÇÕES DE SEGURANÇA
+# ============================
 
-        # Verificação de credenciais
-        if usuario == USUARIO_CORRETO and senha == SENHA_CORRETA:
-            print("Login autorizado")
-            registrar_log("Login realizado com sucesso")
-            break
-        else:
-            tentativas -= 1
-            print(f"Tentativas restantes: {tentativas}")
-            registrar_log("Falha de login")
+def registrar_log(evento):
+    data_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(LOG_FILE, "a") as log:
+        log.write(f"{data_hora} | {evento}\n")
 
-    except Exception as erro:
-        # Tratamento de erro inesperado
-        registrar_log(f"Erro inesperado: {erro}")
+def alertar_soc(usuario, ip):
+    print(f"[ALERTA SOC] Usuário '{usuario}' bloqueado | IP {ip}")
+    registrar_log(f"ALERTA SOC | usuario={usuario} ip={ip}")
 
-# Se todas as tentativas forem usadas
-if tentativas == 0:
-    print("Conta bloqueada")
-    registrar_log("Conta bloqueada por excesso de tentativas")
+def autenticar(nome_usuario, senha_digitada):
+    # Verifica se o usuário existe
+    if nome_usuario not in usuarios:
+        registrar_log(f"Tentativa com usuário inexistente: {nome_usuario}")
+        return False, "Usuário não encontrado"
+
+    usuario = usuarios[nome_usuario]
+
+    # Verifica se está bloqueado
+    if usuario["bloqueado"]:
+        return False, "Usuário bloqueado"
+
+   # Verifica senha
+    if senha_digitada == usuario["senha"]:
+    usuario["tentativas"] = MAX_TENTATIVAS  # reset após sucesso
+    registrar_log(f"Login OK | usuario={nome_usuario} ip={usuario['ip']}")
+    return True, "Login autorizado"
+
+
+    # Falha de login
+    usuario["tentativas"] -= 1
+    registrar_log(
+        f"Falha login | usuario={nome_usuario} ip={usuario['ip']} "
+        f"tentativas_restantes={usuario['tentativas']}"
+    )
+
+    # Bloqueio
+    if usuario["tentativas"] == 0:
+        usuario["bloqueado"] = True
+        registrar_log(
+            f"USUÁRIO BLOQUEADO | usuario={nome_usuario} ip={usuario['ip']}"
+        )
+        alertar_soc(nome_usuario, usuario["ip"])
+
+    return False, "Senha incorreta"
+
+# ============================
+# SIMULAÇÃO DE LOGIN
+# ============================
+
+print("=== Sistema de Login Seguro (Multiusuário) ===")
+
+# Simulando tentativas
+tentativas_simuladas = [
+    ("admin", "1234"),
+    ("admin", "root"),
+    ("admin", "admin123"),
+    ("joao", "errada"),
+    ("joao", "errada"),
+    ("joao", "errada")
+]
+
+for nome, senha in tentativas_simuladas:
+    sucesso, mensagem = autenticar(nome, senha)
+    print(f"[{nome}] {mensagem}")
+
+    if not sucesso:
+        time.sleep(DELAY_TENTATIVAS)
+
+print("Sistema finalizado.")
