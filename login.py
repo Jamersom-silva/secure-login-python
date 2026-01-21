@@ -19,13 +19,15 @@ usuarios = {
         "senha": "admin123",
         "tentativas": MAX_TENTATIVAS_USUARIO,
         "bloqueado": False,
-        "ip": "10.0.0.1"
+        "ip": "10.0.0.1",
+        "falhas": 0
     },
     "joao": {
         "senha": "joao123",
         "tentativas": MAX_TENTATIVAS_USUARIO,
         "bloqueado": False,
-        "ip": "10.0.0.1"  # mesmo IP de propósito
+        "ip": "10.0.0.1",
+        "falhas": 0
     }
 }
 
@@ -49,17 +51,9 @@ def alertar_soc(mensagem):
     registrar_log(f"ALERTA SOC | {mensagem}")
 
 def verificar_ip(ip):
-    """
-    Verifica se o IP está bloqueado
-    """
-    if ip in ips and ips[ip]["bloqueado"]:
-        return True
-    return False
+    return ip in ips and ips[ip]["bloqueado"]
 
 def registrar_falha_ip(ip):
-    """
-    Registra falha global por IP
-    """
     if ip not in ips:
         ips[ip] = {"tentativas": 0, "bloqueado": False}
 
@@ -71,7 +65,6 @@ def registrar_falha_ip(ip):
         alertar_soc(f"IP bloqueado por excesso de tentativas: {ip}")
 
 def autenticar(nome_usuario, senha_digitada):
-    # Usuário inexistente
     if nome_usuario not in usuarios:
         registrar_log(f"Tentativa com usuário inexistente: {nome_usuario}")
         return False, "Usuário não encontrado"
@@ -79,22 +72,20 @@ def autenticar(nome_usuario, senha_digitada):
     usuario = usuarios[nome_usuario]
     ip = usuario["ip"]
 
-    # Verifica IP bloqueado
     if verificar_ip(ip):
         return False, "IP bloqueado por segurança"
 
-    # Verifica usuário bloqueado
     if usuario["bloqueado"]:
         return False, "Usuário bloqueado"
 
-    # Verifica senha
     if senha_digitada == usuario["senha"]:
         usuario["tentativas"] = MAX_TENTATIVAS_USUARIO
         registrar_log(f"Login OK | usuario={nome_usuario} ip={ip}")
         return True, "Login autorizado"
 
-    # Falha de login
+    # Falha
     usuario["tentativas"] -= 1
+    usuario["falhas"] += 1
     registrar_falha_ip(ip)
 
     registrar_log(
@@ -103,7 +94,6 @@ def autenticar(nome_usuario, senha_digitada):
         f"tentativas_ip={ips[ip]['tentativas']}"
     )
 
-    # Bloqueio do usuário
     if usuario["tentativas"] == 0:
         usuario["bloqueado"] = True
         registrar_log(f"USUÁRIO BLOQUEADO | usuario={nome_usuario} ip={ip}")
@@ -112,10 +102,37 @@ def autenticar(nome_usuario, senha_digitada):
     return False, "Senha incorreta"
 
 # ============================
+# RELATÓRIO DE INCIDENTES
+# ============================
+
+def gerar_relatorio():
+    print("\n===== RELATÓRIO FINAL DE SEGURANÇA =====")
+    print(f"Data/Hora: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+    print("Usuários bloqueados:")
+    for nome, dados in usuarios.items():
+        if dados["bloqueado"]:
+            print(f"- {nome} | IP {dados['ip']} | Falhas: {dados['falhas']}")
+
+    print("\nIPs bloqueados:")
+    for ip, dados in ips.items():
+        if dados["bloqueado"]:
+            print(f"- {ip} | Tentativas: {dados['tentativas']}")
+
+    print("\nResumo geral:")
+    for nome, dados in usuarios.items():
+        print(
+            f"- {nome}: falhas={dados['falhas']} | "
+            f"bloqueado={dados['bloqueado']}"
+        )
+
+    print("======================================")
+
+# ============================
 # SIMULAÇÃO DE LOGIN
 # ============================
 
-print("=== Sistema de Login Seguro (Bloqueio Global por IP) ===")
+print("=== Sistema de Login Seguro ===")
 
 tentativas_simuladas = [
     ("admin", "errada"),
@@ -131,7 +148,5 @@ for nome, senha in tentativas_simuladas:
     print(f"[{nome}] {mensagem}")
     time.sleep(DELAY_TENTATIVAS)
 
-print("\nResumo de segurança:")
-for ip, dados in ips.items():
-    if dados["bloqueado"]:
-        print(f"- IP bloqueado: {ip}")
+# Geração do relatório
+gerar_relatorio()

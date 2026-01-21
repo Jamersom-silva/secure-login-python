@@ -145,3 +145,13 @@ Este projeto possui **finalidade exclusivamente educacional**. Todos os dados e 
 ## 👤 Autor
 
 Projeto desenvolvido como parte do aprendizado em **Python aplicado à segurança da informação**, com foco em lógica defensiva e boas práticas de monitoramento.
+
+
+## Melhrias feitas 
+
+* Bloqueio GLOBAL por IP
+-Além do bloqueio por usuário, implementei um mecanismo de bloqueio global por IP, permitindo detectar e mitigar ataques distribuídos contra múltiplas contas a partir da mesma origem, o que se aproxima de controles utilizados em firewalls e sistemas antifraude.
+---
+* Relatório Final de Incidentes
+-Além da detecção e do bloqueio, implementei um relatório final de incidentes que consolida usuários e IPs bloqueados, número de falhas e horário do evento, simulando o fluxo de análise pós-incidente realizado por equipes de SOC
+---
